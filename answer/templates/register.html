@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register</title>
+</head>
+<body>
+{% if message %}
+<p style="color: red">{{message}}</p>
+{% endif %}
+<form action="/register_submit" method="post">
+    <fieldset>
+        <legend>register your id</legend>
+        <p>手机号：<input type="tel" placeholder="请输入手机号" name="phone" value={{phone}} ></p>
+        <p>昵称：<input type="text" placeholder="请输入昵称" name="nickname" value={{nickname}}></p>
+        <p>密码：<input type="password" placeholder='请设置密码' name="setpassword" value={{setpassword}}></p>
+        <p>
+            <submit><button type="submit">注册</button></submit>
+        </p>
+    </fieldset>
+</form>
+</body>
+</html>
