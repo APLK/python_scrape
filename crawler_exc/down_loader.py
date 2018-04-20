@@ -7,20 +7,24 @@
 @desc:
 
 '''
-import json
 import random
 import socket
 import urllib
 from datetime import datetime
+import urllib.request
 import time
 
+import os
 
+from crawler_exc.TqdmUpToProgress import TqdmUpToProgress
+
+DEFAULT_TIMEOUT = 60000*5
 class DownLoader:
     '''
     爬虫下载器类
     用于限速爬取网页并存储爬取过的缓存网页
     '''
-    def __init__(self,proxy=None,headers=None, user_agent='wswp1', retries=2,  delay=5,cache=None):
+    def __init__(self,proxy=None,headers=None, user_agent='wswp1', retries=2, delay=5,cache=None, timeout=DEFAULT_TIMEOUT):
         '''
         初始化:param seed_url: 需要爬虫的入口链接
         :param proxy: ip代理
@@ -29,6 +33,7 @@ class DownLoader:
         :param delay: 限制访问的时间间隔
         :param cache: 缓存
         '''
+        socket.setdefaulttimeout(timeout)
         self.proxy=proxy
         self.user_agent=user_agent
         self.retries=retries
@@ -45,17 +50,37 @@ class DownLoader:
             except KeyError:
                 pass
             else:
-                if self.retries>0 and 500<=result['code']<600:
-                    result=None
+                pass
+                #if self.retries>0 and 500<=result['code']<600:
+                #    result=None
         if result is None:#没有缓存就需要去调用download爬取
             self.speedLimit.wait(url)
             #随机从代理池中取出一个代理ip进行爬取
             proxyIP = random.chocie(self.proxy) if self.proxy else None
+            # with TqdmUpToProgress(unit='B', unit_scale=True, miniters=1,
+            #                       desc=self.seed_url.split('/')[-1]) as zf:  # desc取最后一个元素作为文件名
+            #     urllib.request.urlretrieve(self.seed_url, filename=self.seed_url.split('/')[-1],
+            #                                reporthook=zf.update_to, data=None)
             result=self.download(url,proxyIP,self.headers,self.retries)
             # print('result=',dict(result))
             if self.cache:#如果需要缓存则存储该缓存url信息
                 self.cache[url]=result
         return result['html']
+
+    def downloadZIPTOLocal(self,  url):
+        '''
+        带下载进度条的远程数据下载到本地
+        :param url:
+        :return:
+        '''
+        desc=url.split('/')[-1]
+        if not desc or not os.path.isfile(desc):
+            with TqdmUpToProgress(unit='B', unit_scale=True, miniters=1,
+                  desc=desc) as t:  # desc取最后一个元素作为文件名
+                #urlretrieve函数是将远程数据直接保存到本地,open函数表示远程url的类文件对象，
+                # 然后像本地文件一样操作这个类文件对象来获取远程数据
+                urllib.request.urlretrieve(url, filename=desc,
+                                   reporthook=t.update_to, data=None)
 
     def download(self,  url, proxyIP, headers, retries):
         '''
@@ -72,12 +97,13 @@ class DownLoader:
             build_opener.add_handler(proxy_handler)
             urllib.request.install_opener(build_opener)
         try:
-            opener_open = build_opener.open(url,timeout=5, data=bytes(
-                json.dumps(headers).encode(encoding='UTF-8')))
+            if headers:
+                build_opener.addheaders(headers)
+            opener_open = build_opener.open(url)
             html = opener_open.read()
             code = opener_open.code
         except urllib.request.URLError as e:
-            print('error:', e.reason)
+            print('error_:', e.reason)
             html = ''
             if hasattr(e, 'code'):
                 code = e.code
@@ -122,4 +148,6 @@ class SpeedLimit:
                 time.sleep(dt)
         self.domains[domain] = datetime.now()
 
-
+# eg_link='http://s3.amazonaws.com/alexa-static/top-1m.csv.zip'
+# loader = DownLoader()
+# print(loader(eg_link))

@@ -92,8 +92,8 @@ def get_links(html):
     return re_compile.findall(html)
 
 
-def link_crawler(seed_url, link_regex=None, proxy=None, user_agent='wswp1', retries=2, headers=None,
-                 max_depth=2, max_urls=-1, delay=5, scrape_callback=None,cache=None):
+def link_crawler(seed_url, link_regex=None, proxy=None, user_agent='wswp2', retries=2, headers=None,
+                 max_depth=0, max_urls=-1, delay=5, scrape_callback=None,cache=None):
     '''
     爬虫入口.
     :param seed_url: 需要爬虫的入口链接
@@ -118,14 +118,13 @@ def link_crawler(seed_url, link_regex=None, proxy=None, user_agent='wswp1', retr
         url = crawler_list.pop()
         # 该user_agent是否支持爬虫
         # print(url,parser.can_fetch(user_agent, send_url))
-        if parser.can_fetch(user_agent, seed_url):
+        if parser.can_fetch(user_agent, url) or url==scrape_callback.seed_url:
             html = loader(url)
             # print('html0='+html.decode('utf-8'))
             depth = seen[url]
             links = []
-            # 如果需要抓取html标签中的数据,调用lxml获取对应的属性值,并存储在excel表格中
             if scrape_callback:
-                scrape_callback(url, html)  # 实例化对象scrape_callback会自动调用类中的__call__方法
+                links.extend(scrape_callback(url, html) or [])
             # 没超过最大页面深度
             if depth != max_depth:
                 # 超链接的匹配规则并且html存在时
@@ -134,19 +133,54 @@ def link_crawler(seed_url, link_regex=None, proxy=None, user_agent='wswp1', retr
                                  re.search(link_regex, link))
                 for link in links:
                     urljoin = normalize(link, seed_url)
-                    print(urljoin)
+                    # print(urljoin)
                     if urljoin not in seen:
                         seen[urljoin] = depth + 1
+                        #加入相同netloc的url
                         if same_domain(seed_url, urljoin):
                             crawler_list.append(urljoin)
+            else:
+                crawler_list.append(links)
             num_urls += 1
+            print('num',num_urls,max_urls,len(links))
             if num_urls == max_urls:
-                scrape_callback.closeFile()
                 break
         else:
             print('bad agent:', user_agent)
-            scrape_callback.closeFile()
             break
+def crawler(seed_url, link_regex=None, proxy=None,  retries=2, headers=None,
+                  delay=5, scrape_callback=None,cache=None):
+    '''
+    爬虫入口.
+    :param seed_url: 需要爬虫的入口链接
+    :param link_regex: 超链接的匹配规则
+    :param proxy: ip代理
+    :param user_agent: 用户代理
+    :param retries: 访问失败后的重连最大次数
+    :param headers:头部参数
+    :param max_depth: 爬虫的最大页面深度
+    :param max_urls: 最大的链接下载数
+    :param delay: 限制访问的时间间隔
+    :param scrape_callback: 数据写入excel回调类
+    :return:
+    '''
+    crawler_list = queue.deque([seed_url])
+    loader = DownLoader(proxy,headers,None, retries, delay, cache)
+    # print(crawler_list)
+    while crawler_list:
+        url = crawler_list.pop()
+        # 该user_agent是否支持爬虫
+        # print(url,parser.can_fetch(user_agent, send_url))
+        html = loader(url)
+        # print('html0='+html.decode('utf-8'))
+        links = []
+        if scrape_callback:
+            links.extend(scrape_callback(url, html) or [])
+        # 超链接的匹配规则并且html存在时
+        if link_regex and html:
+            links.extend(link for link in get_links(html.decode('utf-8')))
+        for link in links:
+            crawler_list.append(link)
 
 
 def same_domain(url1, url2):

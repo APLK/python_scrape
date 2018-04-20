@@ -36,12 +36,12 @@ class ScrapeCallback:
             if result:
                 self.writer.writerow(result.values())
 
-    def closeFile(self):
-        '''
-        close stream
-        :return:
-        '''
-        self.openCS.close()
+    # def closeFile(self):
+    #     '''
+    #     close stream
+    #     :return:
+    #     '''
+    #     self.openCS.close()
 if __name__ == '__main__':
     link_crawler('http://example.webscraping.com', '/(index|view)', delay=5, retries=2, max_depth=1, user_agent='GoodCrawler',scrape_callback=ScrapeCallback())
 
