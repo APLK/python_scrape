@@ -16,9 +16,11 @@ import time
 
 import os
 
+from http.client import IncompleteRead
+
 from crawler_exc.TqdmUpToProgress import TqdmUpToProgress
 
-DEFAULT_TIMEOUT = 60000*5
+DEFAULT_TIMEOUT = 1#分钟
 class DownLoader:
     '''
     爬虫下载器类
@@ -93,32 +95,49 @@ class DownLoader:
         '''
         build_opener = urllib.request.build_opener()
         if proxyIP:  # 使用代理
+            print('proxyIP',proxyIP)
             proxy_handler = urllib.request.ProxyHandler(proxies=proxyIP)
             build_opener.add_handler(proxy_handler)
             urllib.request.install_opener(build_opener)
         try:
             if headers:
-                build_opener.addheaders(headers)
+                build_opener.addheaders =headers
+            print('需要download的地址是',url)
             opener_open = build_opener.open(url)
             html = opener_open.read()
             code = opener_open.code
+        except IncompleteRead as e:
+            # 处理 chunked 读取错误，由于这里都是 json 所以就不再作 gzip 验证
+            print('IncompleteRead解析异常:', e.partial)
+            html = e.partial
+            html = html.decode('utf-8')
+            if len(html) == 0:
+                html = ''
+            if hasattr(e, 'code'):
+                code = e.code
+            else:
+                code=None
         except urllib.request.URLError as e:
-            print('error_:', e.reason)
+            print('url解析异常:', e.reason)
             html = ''
             if hasattr(e, 'code'):
                 code = e.code
                 if retries > 0 and 500 <= code <= 600:
                     # 如果服务器端错误,并且未超过重试的次数,则递归调用
-                    return self.download(url, headers, proxyIP, retries - 1)
+                    return self.download(url,proxyIP, headers,  retries - 1)
             else:
                 code=None
         except socket.timeout as e:#爬虫超时会造成假死状态,所以这里需要捕捉异常
-            print(type(e))
+            print('socket超时',type(e))
             html = ''
             code=None
             if retries > 0:
                 # 如果服务器端错误,并且未超过重试的次数,则递归调用
-                return self.download(url, headers, proxyIP, retries - 1)
+                return self.download(url,  proxyIP,headers, retries - 1)
+        except ConnectionResetError as e:#爬虫超时会造成假死状态,所以这里需要捕捉异常
+            print('无法访问该网址...',e)
+            html = ''
+            code=None
         return {'html':html,'code':code}
 
 class SpeedLimit:

@@ -93,7 +93,7 @@ def get_links(html):
 
 
 def link_crawler(seed_url, link_regex=None, proxy=None, user_agent='wswp2', retries=2, headers=None,
-                 max_depth=0, max_urls=-1, delay=5, scrape_callback=None,cache=None):
+                 max_depth=0, max_urls=-1, delay=5, scrape_callback=None, cache=None):
     '''
     爬虫入口.
     :param seed_url: 需要爬虫的入口链接
@@ -112,13 +112,13 @@ def link_crawler(seed_url, link_regex=None, proxy=None, user_agent='wswp2', retr
     crawler_list = queue.deque([seed_url])
     num_urls = 0
     seen = {seed_url: 0}
-    loader = DownLoader(proxy,headers, user_agent, retries, delay, cache)
+    loader = DownLoader(proxy, headers, user_agent, retries, delay, cache)
     # print(crawler_list)
     while crawler_list:
         url = crawler_list.pop()
         # 该user_agent是否支持爬虫
         # print(url,parser.can_fetch(user_agent, send_url))
-        if parser.can_fetch(user_agent, url) or url==scrape_callback.seed_url:
+        if parser.can_fetch(user_agent, url) or url == scrape_callback.seed_url:
             html = loader(url)
             # print('html0='+html.decode('utf-8'))
             depth = seen[url]
@@ -136,20 +136,22 @@ def link_crawler(seed_url, link_regex=None, proxy=None, user_agent='wswp2', retr
                     # print(urljoin)
                     if urljoin not in seen:
                         seen[urljoin] = depth + 1
-                        #加入相同netloc的url
+                        # 加入相同netloc的url
                         if same_domain(seed_url, urljoin):
                             crawler_list.append(urljoin)
             else:
                 crawler_list.append(links)
             num_urls += 1
-            print('num',num_urls,max_urls,len(links))
+            print('num', num_urls, max_urls, len(links))
             if num_urls == max_urls:
                 break
         else:
             print('bad agent:', user_agent)
             break
-def crawler(seed_url, link_regex=None, proxy=None,  retries=2, headers=None,
-                  delay=5, scrape_callback=None,cache=None):
+
+
+def crawler(seed_url, link_regex=None, proxy=None, retries=2, headers=None,
+            delay=5, scrape_callback=None, cache=None):
     '''
     爬虫入口.
     :param seed_url: 需要爬虫的入口链接
@@ -164,23 +166,27 @@ def crawler(seed_url, link_regex=None, proxy=None,  retries=2, headers=None,
     :param scrape_callback: 数据写入excel回调类
     :return:
     '''
+    user_agent = "Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)"
+    # 在headers中设置agent
+    headers = [("User-Agent", user_agent)]
     crawler_list = queue.deque([seed_url])
-    loader = DownLoader(proxy,headers,None, retries, delay, cache)
+    loader = DownLoader(proxy, headers, None, retries, delay, cache)
     # print(crawler_list)
     while crawler_list:
         url = crawler_list.pop()
-        # 该user_agent是否支持爬虫
-        # print(url,parser.can_fetch(user_agent, send_url))
-        html = loader(url)
-        # print('html0='+html.decode('utf-8'))
-        links = []
-        if scrape_callback:
-            links.extend(scrape_callback(url, html) or [])
-        # 超链接的匹配规则并且html存在时
-        if link_regex and html:
-            links.extend(link for link in get_links(html.decode('utf-8')))
-        for link in links:
-            crawler_list.append(link)
+        if url:
+            # 该user_agent是否支持爬虫
+            # print(url,parser.can_fetch(user_agent, send_url))
+            html = loader(url)
+            # print('html0='+html.decode('utf-8'))
+            links = []
+            if scrape_callback:
+                links.extend(scrape_callback(url, html) or [])
+                # 超链接的匹配规则并且html存在时
+                # if link_regex and html:
+                #     links.extend(link for link in get_links(html.decode('utf-8')))
+                for link in links:
+                    crawler_list.append(link)
 
 
 def same_domain(url1, url2):
