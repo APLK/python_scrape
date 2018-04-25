@@ -43,12 +43,6 @@ class AlexaCallback:
                         if len(urls) == self.max_urls:
                             break
             return urls
-scrape_callback = AlexaCallback('http://s3.amazonaws.com/alexa-static/top-1m.csv.zip',1000)
-cache = MongoDBCache()
-crawler(scrape_callback.seed_url, scrape_callback=scrape_callback, cache=cache)
-
-# url='http://s3.amazonaws.com/alexa-static/top-1m.csv.zip'
-# urlsplit = parse.urlsplit(url)
-# path = urlsplit.path
-# # 因为windows文件名不识别/结尾的名称,所以需要对这样的文件进行特殊处理
-# print('path',path,urlsplit.netloc,urlsplit.netloc)
+# scrape_callback = AlexaCallback('http://s3.amazonaws.com/alexa-static/top-1m.csv.zip',1000)
+# cache = MongoDBCache()
+# crawler(scrape_callback.seed_url, scrape_callback=scrape_callback, cache=cache)

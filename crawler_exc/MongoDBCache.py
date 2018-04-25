@@ -45,7 +45,6 @@ class MongoDBCache:
             self.client = MongoClient('localhost', 27017)
         self.db = self.client.cache#cache是mongodb的数据库名称
         try:
-            self.db.webpage.drop()#先清空webpage表集合
             #webpage是数据库的表名称
             #mongodb设置expireAfterSeconds属性后表示期望多长时间后自动删除数据库数据,此处设置的5天
             # create_index创建一个名为timestamp的索引,根据此字段的索引值决定数据的更新时间
@@ -53,6 +52,8 @@ class MongoDBCache:
         except Exception as e:
             print(e,'-->请先尝试启动mongodb服务')
 
+    def clear(self):
+        self.db.webpage.drop()
 
     def urt_to_path(self, url):
         '''
@@ -66,7 +67,7 @@ class MongoDBCache:
         urlsplit = parse.urlsplit(url)
         path = urlsplit.path
         # 因为windows文件名不识别/结尾的名称,所以需要对这样的文件进行特殊处理
-        print('path=',url,path,urlsplit.netloc,urlsplit.netloc)
+        # print('path=',url,path,urlsplit.netloc,urlsplit.netloc)
         if not path:
             path = urlsplit.netloc+'/index.html'
         elif path.endswith('/'):
@@ -91,7 +92,7 @@ class MongoDBCache:
         :param url: 地址
         :return:
         '''
-        print(url, '__getitem__')
+        # print(url, '__getitem__')
         path = self.urt_to_path(url)
         #在webpage表中找到_id为path的行数据,如果存在就取出字典中为result的key值
         record = self.db.webpage.find_one({'_id': path})
@@ -109,7 +110,7 @@ class MongoDBCache:
         :param result: 需要写入的数据
         :return:
         '''
-        print(url, 'result')
+        # print(url, 'result')
         path = self.urt_to_path(url)
         timestamp=datetime.utcnow()
         # Binary二进制流对象
