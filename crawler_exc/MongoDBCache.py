@@ -118,5 +118,5 @@ class MongoDBCache:
         #更新或插入一条_id为path,result为result值,timestamp为timestamp值的数据
         self.db.webpage.update({'_id': path}, {'$set': record}, upsert=True)
 
-if __name__ == '__main__':
-    link_crawler('http://example.webscraping.com/', '/(index|view)', cache=MongoDBCache())
+# if __name__ == '__main__':
+#     link_crawler('http://example.webscraping.com/', '/(index|view)', cache=MongoDBCache())

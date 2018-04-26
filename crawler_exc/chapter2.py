@@ -4,7 +4,9 @@
 
 @time:2018/4/10 
 
-@desc:
+@desc:正则表达式性能快,使用困难;bs性能慢使用简单;lxml性能快使用简单
+如果是下载网页不抽取数据的话建议使用bs;如果只抓取数据,又想避免额外依赖的话
+使用正则;lxml是数据抓取的最好选择
 
 '''
 import csv
@@ -82,6 +84,7 @@ def lxml_scraper(html):
         tree = etree.fromstring(html,parser)
         # tree=etree.HTML(html,parser)
         for regex in FIELDS:
+            #选择父元素为 <table> 元素的所有 id为places_%s__row的<tr> 元素下class为w2p_fw的td标签。
             if tree.cssselect('table>tr#places_%s__row>td.w2p_fw'%regex):
                 result[regex]=tree.cssselect('table>tr#places_%s__row>td.w2p_fw'%regex)[0].text
     return result

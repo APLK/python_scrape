@@ -45,6 +45,8 @@ def threaded_crawler(seed_url, proxy=None, retries=2,
                                 crawler_queue.append(link)
 
     threads = []
+    startTime = time.time()
+    print('startTime=', startTime)
     while threads or crawler_queue:
         for thread in threads:
             if not thread.is_alive():
@@ -56,6 +58,10 @@ def threaded_crawler(seed_url, proxy=None, retries=2,
             thread.setDaemon(True)  # 设置为守护线程
             thread.start()
             threads.append(thread)
+        if len(threads) == 0 and len(crawler_queue) == 0:
+            endTime = time.time()
+            print('%s,%.2f' % ('threads=', endTime - startTime))#488.48S=8.1413333分(min)
+            break
         time.sleep(1)
 
 
@@ -69,7 +75,7 @@ def threaded_crawler(seed_url, proxy=None, retries=2,
 #
 # if __name__ == '__main__':
 #     main(10)
-scrape_callback = AlexaCallback('http://s3.amazonaws.com/alexa-static/top-1m.csv.zip',1000)
+scrape_callback = AlexaCallback('http://s3.amazonaws.com/alexa-static/top-1m.csv.zip', 1000)
 cache = MongoDBCache()
 cache.clear()
 threaded_crawler(scrape_callback.seed_url, scrape_callback=scrape_callback, cache=cache,
