@@ -20,7 +20,7 @@ from http.client import IncompleteRead
 
 from crawler_exc.TqdmUpToProgress import TqdmUpToProgress
 
-DEFAULT_TIMEOUT = 1#分钟
+DEFAULT_TIMEOUT = 10#单位s
 class DownLoader:
     '''
     爬虫下载器类
@@ -104,7 +104,7 @@ class DownLoader:
                 build_opener.addheaders =headers
             print('需要download的地址是',url)
             opener_open = build_opener.open(url)
-            html = opener_open.read()
+            html = opener_open.read().decode('utf-8')
             code = opener_open.code
         except IncompleteRead as e:
             # 处理 chunked 读取错误，由于这里都是 json 所以就不再作 gzip 验证
