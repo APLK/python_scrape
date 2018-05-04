@@ -76,7 +76,8 @@ def write_csv(headers=None):
         writer.writerow([record[field] for field in FIELDS] )
 
 # url = 'http://example.webscraping.com/places/ajax/search.json?&search_term={search}&page_size={pageSize}&page={page}'.format(search=search,pageSize=pageSize,page=page)
-url = 'http://example.webscraping.com/places/default/dynamic'
+url = 'http://example.webscraping.com/places/default/search'
+# url = 'http://example.webscraping.com/places/default/dynamic'
 user_agent = "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36"
 # 在headers中设置agent
 headers = [("User-Agent", user_agent)]
@@ -93,14 +94,41 @@ headers = [("User-Agent", user_agent)]
 # tree = etree.fromstring(html,parser)
 # print(tree.cssselect('#result')[0].text)
 
+#初始化一个QApplication对象,
 app = QApplication([])
+#创建一个QWebView对象,用于web文档的容器
 webview = QWebView()
+# 创建一个QEventLoop对象,用于创建本地时间循环
 loop = QEventLoop()
+# loadFinished回调连接了QEventLoop的quit方法,可以在网页加载完成之后停止事件循环
 webview.loadFinished.connect(loop.quit)
+#将要加载的url传给QWebView,PyQt将该url的字符串封装在QUrl对象中
 webview.load(QUrl(url))
+# 等待网页加载完成,在事件循环启动时调用loop.exec_
 loop.exec_()
-html = webview.page().mainFrame().toHtml()
-parser = etree.XMLParser(recover=True)
-tree = etree.fromstring(html,parser)
-print(tree.cssselect('#result')[0].text)
 
+
+# 网页加载完成后退出事件循环
+# html = webview.page().mainFrame().toHtml()
+# # 对加载的网页产生的HTMl进行数据抽取
+# parser = etree.XMLParser(recover=True)
+# tree = etree.fromstring(html,parser)
+# print(tree.cssselect('#result')[0].text)
+
+
+webview.show()
+frame = webview.page().mainFrame()
+#找到id为search_term的标签,设置搜索值为.号(表示搜索全部结果)
+frame.findFirstElement('#search_term').setAttribute('value','.')
+# option:checked 	选择每个被选中的 <option> 元素。此处表示找到id为page_size的标签下的option并选择值为1000
+frame.findAllElements('#page_size option')[1].setPlainText('1000')
+#找到id为search的第一个标签,设置模拟点击事件
+frame.findFirstElement('#search').evaluateJavaScript('this.click()')
+# app.exec_()
+
+elements=None
+while not elements:
+    app.processEvents()
+    elements = frame.findAllElements('#results a')
+countries = [e.toPlainText().strip() for e in elements]
+print(countries)

@@ -36,21 +36,21 @@ class MongoDBCache:
 
     '''
 
-    def __init__(self, cache_path='cache', max_length=255, expires=timedelta(days=5),client=None):
+    def __init__(self, cache_path='cache', max_length=255, expires=timedelta(days=5), client=None):
         self.cache_path = cache_path
         self.max_length = max_length
         self.expires = expires
-        #mongodb默认的端口号27017
+        # mongodb默认的端口号27017
         if client is None:
             self.client = MongoClient('localhost', 27017)
-        self.db = self.client.cache#cache是mongodb的数据库名称
+        self.db = self.client.cache  # cache是mongodb的数据库名称
         try:
-            #webpage是数据库的表名称
-            #mongodb设置expireAfterSeconds属性后表示期望多长时间后自动删除数据库数据,此处设置的5天
+            # webpage是数据库的表名称
+            # mongodb设置expireAfterSeconds属性后表示期望多长时间后自动删除数据库数据,此处设置的5天
             # create_index创建一个名为timestamp的索引,根据此字段的索引值决定数据的更新时间
-            self.db.webpage.create_index('timestamp',expireAfterSeconds=expires.total_seconds())
+            self.db.webpage.create_index('timestamp', expireAfterSeconds=expires.total_seconds())
         except Exception as e:
-            print(e,'-->请先尝试启动mongodb服务')
+            print(e, '-->请先尝试启动mongodb服务')
 
     def clear(self):
         self.db.webpage.drop()
@@ -69,14 +69,14 @@ class MongoDBCache:
         # 因为windows文件名不识别/结尾的名称,所以需要对这样的文件进行特殊处理
         # print('path=',url,path,urlsplit.netloc,urlsplit.netloc)
         if not path:
-            path = urlsplit.netloc+'/index.html'
+            path = urlsplit.netloc + '/index.html'
         elif path.endswith('/'):
             path += '/index.html'
         # 将scheme和netloc及path和query进行拼接
         if not urlsplit.netloc or not urlsplit.query:
-            filename=path
+            filename = path
         else:
-            filename = urlsplit.netloc+ path + urlsplit.netloc
+            filename = urlsplit.netloc + path + urlsplit.netloc
         print(filename)
         # filename文件名中只能包含数字,字母和基本符号,否则就用_替换掉
         filename = re.sub('[^/0-9a-zA-Z\-.,;_]', '_', filename)
@@ -94,12 +94,12 @@ class MongoDBCache:
         '''
         # print(url, '__getitem__')
         path = self.urt_to_path(url)
-        #在webpage表中找到_id为path的行数据,如果存在就取出字典中为result的key值
+        # 在webpage表中找到_id为path的行数据,如果存在就取出字典中为result的key值
         record = self.db.webpage.find_one({'_id': path})
         if record:
             return pickle.loads(zlib.decompress(record['result']))
         else:
-            raise KeyError(url+' does not exist')
+            raise KeyError(url + ' does not exist')
 
     def __setitem__(self, url, result):
         '''
@@ -112,10 +112,10 @@ class MongoDBCache:
         '''
         # print(url, 'result')
         path = self.urt_to_path(url)
-        timestamp=datetime.utcnow()
+        timestamp = datetime.utcnow()
         # Binary二进制流对象
-        record={'result':Binary(zlib.compress(pickle.dumps((result)))),'timestamp':timestamp}
-        #更新或插入一条_id为path,result为result值,timestamp为timestamp值的数据
+        record = {'result': Binary(zlib.compress(pickle.dumps((result)))), 'timestamp': timestamp}
+        # 更新或插入一条_id为path,result为result值,timestamp为timestamp值的数据
         self.db.webpage.update({'_id': path}, {'$set': record}, upsert=True)
 
 # if __name__ == '__main__':
